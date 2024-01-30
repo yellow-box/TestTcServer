@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"time"
 )
 
 func startListen(conectInfo ConnectInfo) {
@@ -31,17 +30,8 @@ func startListen(conectInfo ConnectInfo) {
 func acceptConnect(conn net.Conn) {
 	defer conn.Close()
 	userConn := manager.UserConn{Conn: conn, Reader: bufio.NewReader(conn)}
-	for {
-		var buf [1024]byte
-		num, err := userConn.Reader.Read(buf[:])
-		if err != nil {
-			fmt.Println("\nread from client error:", err)
-			break
-		}
-		recStr := string(buf[:num])
-		fmt.Println("read from clinet :", recStr)
-		userConn.WriteString(recStr + " " + time.Now().String() + " " + recStr)
-	}
+	manager.GetManager().AppendUserConn(userConn)
+	manager.GetManager().StartRead(userConn.Uid)
 }
 
 func Start() {
