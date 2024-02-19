@@ -7,64 +7,92 @@ import (
 
 var once sync.Once
 var manager UserConnManager
-var recCallback OnRecData
+var recCallbackList []OnRecData
 
 type UserConnManager struct {
 	userConnMap map[int]UserConn
-	recCallback OnRecData
+	rwLock      sync.RWMutex
 }
 
 type OnRecData interface {
-	onRec(uid int, data []byte)
+	OnRec(uid int, data []byte)
 }
 
-type CallDealer struct {
+func AddRecCallback(onRecData OnRecData) {
+	recCallbackList = append(recCallbackList, onRecData)
 }
 
-func (deal CallDealer) onRec(uid int, data []byte) {
+func (ucManager *UserConnManager) OnRec(uid int, data []byte) {
 	fmt.Printf("recv data uid:%d,data:%s\n", uid, string(data[:]))
-	GetManager().NotifyUserByte(uid, data)
+	for _, recCallback := range recCallbackList {
+		recCallback.OnRec(uid, data)
+	}
 }
 
-func GetManager() UserConnManager {
+func GetManager() *UserConnManager {
 	once.Do(func() {
-		manager = UserConnManager{userConnMap: make(map[int]UserConn), recCallback: CallDealer{}}
+		manager = UserConnManager{userConnMap: make(map[int]UserConn)}
 	})
-	return manager
+	return &manager
 }
 
-func (ucManager UserConnManager) AppendUserConn(uConn UserConn) {
-	ucMap := ucManager.userConnMap
-	ucMap[uConn.Uid] = uConn
+func (ucManager *UserConnManager) AppendUserConn(uConn *UserConn) {
+	defer ucManager.rwLock.Unlock()
+	ucManager.rwLock.Lock()
+	ucManager.userConnMap[uConn.Uid] = *uConn
 }
 
-func (ucManager UserConnManager) StartRead(uid int) {
-	uconn := ucManager.userConnMap[uid]
-	err := uconn.readData(manager.recCallback)
+func (ucManager *UserConnManager) StartRead(uid int) {
+	uConn := ucManager.userConnMap[uid]
+	if uConn.Conn == nil {
+		fmt.Println("no conn match uid:", uid)
+		return
+	}
+	err := uConn.readData(&manager)
 	if err != nil {
 		fmt.Printf("read Data error uid=%d,error=%s\n", uid, err)
-		ucManager.RemoveUserConn(uconn)
+		ucManager.RemoveUserConn(uConn)
 	}
-
 }
 
-func (ucManager UserConnManager) RemoveUserConn(uConn UserConn) {
+func (ucManager *UserConnManager) RemoveUserConn(uConn UserConn) {
+	defer ucManager.rwLock.Unlock()
 	ucMap := ucManager.userConnMap
+	ucManager.rwLock.Lock()
 	delete(ucMap, uConn.Uid)
 }
 
-func (ucManager UserConnManager) NotifyAll(content string) {
-	for _, userconn := range ucManager.userConnMap {
-		userconn.WriteString(content)
+func (ucManager *UserConnManager) RemoveUserConnByUid(uid int) {
+	defer ucManager.rwLock.Unlock()
+	ucManager.rwLock.Lock()
+	uConn := ucManager.userConnMap[uid]
+	if uConn.Conn != nil {
+		err := uConn.Conn.Close()
+		if err != nil {
+			delete(ucManager.userConnMap, uid)
+			fmt.Println("success remove uConn and close conn")
+		}
 	}
 }
 
-func (ucManager UserConnManager) NotifyUser(uid int, content string) {
-	conn := ucManager.userConnMap[(uid)]
-	conn.WriteString(content)
+func (ucManager *UserConnManager) NotifyAll(content string) {
+	defer ucManager.rwLock.RUnlock()
+	ucManager.rwLock.RLock()
+	for _, uConn := range ucManager.userConnMap {
+		uConn.WriteString(content)
+	}
 }
 
-func (ucManager UserConnManager) NotifyUserByte(uid int, content []byte) {
+func (ucManager *UserConnManager) NotifyUser(uid int, content string) {
+	defer ucManager.rwLock.RUnlock()
+	ucManager.rwLock.RLock()
+	uConn := ucManager.userConnMap[(uid)]
+	uConn.WriteString(content)
+}
+
+func (ucManager *UserConnManager) NotifyUserByte(uid int, content []byte) {
+	defer ucManager.rwLock.RUnlock()
+	ucManager.rwLock.RLock()
 	conn := ucManager.userConnMap[(uid)]
 	conn.WriteData(content)
 }

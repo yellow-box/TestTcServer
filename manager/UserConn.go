@@ -3,6 +3,7 @@ package manager
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 )
@@ -18,11 +19,15 @@ type UserConn struct {
 	Reader *bufio.Reader
 }
 
-func (userConn UserConn) WriteString(content string) {
+func (userConn *UserConn) WriteString(content string) {
 	userConn.WriteData([]byte(content))
 }
 
-func (userConn UserConn) WriteData(byteData []byte) {
+func (userConn *UserConn) WriteData(byteData []byte) {
+	if userConn.Conn == nil {
+		fmt.Println("uConn is not exist,uid:", userConn.Uid)
+		return
+	}
 	size := int32(len(byteData))
 	resultSize := make([]byte, 4)
 	var n int
@@ -43,7 +48,7 @@ func (userConn UserConn) WriteData(byteData []byte) {
 	//tcp 粘包 问题，发送端 调用 api时分 多次调用，但在接受端 可能会合并成一次，来被接受。原因可能来自发送端，也可能来自接收端
 }
 
-func (userConn UserConn) readData(recCallback OnRecData) error {
+func (userConn *UserConn) readData(recCallback OnRecData) error {
 	defer func(Conn net.Conn) {
 		err := Conn.Close()
 		if err != nil {
@@ -55,12 +60,12 @@ func (userConn UserConn) readData(recCallback OnRecData) error {
 		if err != nil {
 			return err
 		} else {
-			recCallback.onRec(userConn.Uid, dataBytes)
+			recCallback.OnRec(userConn.Uid, dataBytes)
 		}
 	}
 }
 
-func (userConn UserConn) readDataInner() ([]byte, error) {
+func (userConn *UserConn) readDataInner() ([]byte, error) {
 	//先读字节数
 	dataBufSize := 1024
 	buf := make([]byte, 4)
@@ -74,23 +79,20 @@ func (userConn UserConn) readDataInner() ([]byte, error) {
 	}
 	pendingSize = getSizeFromByteArray(buf)
 	fmt.Printf("\nuserConn uid =%d, read num success pendingSize=%d\n", userConn.Uid, pendingSize)
-	readTurns := pendingSize / dataBufSize
-	if pendingSize%dataBufSize != 0 {
-		readTurns += 1
-	}
+	curReadSize := 0
 	dataBuf := make([]byte, dataBufSize)
 	result := make([]byte, pendingSize)
-	for i := 0; i < readTurns; i++ {
+	for curReadSize < pendingSize {
 		n, err = userConn.Reader.Read(dataBuf)
 		if err != nil {
 			fmt.Printf("userConn uid =%d ,read data error :%s\n", userConn.Uid, err)
-			break
+			return result, err
 		} else {
 			fmt.Printf("userConn uid =%d, read data success \n", userConn.Uid)
-			startIndex := i * dataBufSize
 			for j := 0; j < n; j++ {
-				result[startIndex+j] = dataBuf[j]
+				result[curReadSize+j] = dataBuf[j]
 			}
+			curReadSize += n
 		}
 	}
 	return result, nil
@@ -98,4 +100,18 @@ func (userConn UserConn) readDataInner() ([]byte, error) {
 
 func getSizeFromByteArray(rawContent []byte) int {
 	return int(binary.LittleEndian.Uint32(rawContent))
+}
+
+func (userConn *UserConn) BindUser() error {
+	rawContent, err := userConn.readDataInner()
+	if err != nil {
+		return err
+	}
+	uid := binary.LittleEndian.Uint32(rawContent)
+	if uid < 1 {
+		return errors.New(" uid should greater than 0,uid")
+	}
+	userConn.Uid = int(uid)
+	GetManager().AppendUserConn(userConn)
+	return nil
 }
