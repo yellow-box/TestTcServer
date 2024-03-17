@@ -9,6 +9,6 @@ func (dealer BindUserDealer) GetOperateType() int {
 	return opType.BIND_USER
 }
 
-func (dealer BindUserDealer) DealOp(fromUid int, content []byte) {
+func (dealer BindUserDealer) DealOp(seq int64, fromUid int, content []byte) {
 
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -72,7 +73,7 @@ func (userConn *UserConn) readDataInner() ([]byte, error) {
 	var n int
 	var err error
 	var pendingSize int
-	n, err = userConn.Reader.Read(buf[:])
+	n, err = io.ReadFull(userConn.Reader, buf[:])
 	if err != nil {
 		fmt.Printf("\nuserConn uid =%d ,read num error :%s\n", userConn.Uid, err)
 		return make([]byte, 0), err
@@ -83,7 +84,10 @@ func (userConn *UserConn) readDataInner() ([]byte, error) {
 	dataBuf := make([]byte, dataBufSize)
 	result := make([]byte, pendingSize)
 	for curReadSize < pendingSize {
-		n, err = userConn.Reader.Read(dataBuf)
+		if (pendingSize - curReadSize) < dataBufSize {
+			dataBuf = dataBuf[:pendingSize-curReadSize]
+		}
+		n, err = io.ReadFull(userConn.Reader, dataBuf)
 		if err != nil {
 			fmt.Printf("userConn uid =%d ,read data error :%s\n", userConn.Uid, err)
 			return result, err

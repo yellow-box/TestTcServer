@@ -7,35 +7,42 @@ import (
 )
 
 const oplen = 4
+const seqlen = 8
 
-// 规定前4个字节表示 opType,后续字节表示具体内容
+// 规定最开始8个字节 表示 seq序号，接着4个字节表示 opType,后续字节表示具体内容
 const BIND_USER = 1
-const SEND_MESSAGE_SINGEL = 2
+const HEART_BEAT = 2
 const SEND_MESSAGE_ALL = 3
 const LOGOUT_UESR = 4
 const PUSH_MESSAGE = 5
 const CREATE_ROOM = 6
 const JOIN_ROOM = 7
 
-func divideTwoPart(rawContent []byte) (error, int, []byte) {
-	if len(rawContent) < oplen {
-		return errors.New("content should start with 4 byte as opType"), 0, make([]byte, 0)
+const SUCCESS = 200
+const FAIL = 500
+
+func divideThreePart(rawContent []byte) (error, int64, int, []byte) {
+	if len(rawContent) < (oplen + seqlen) {
+		return errors.New("content should start with 8 bytes as seq and then 4 bytes as optType"), 0, 0, make([]byte, 0)
 	}
-	op := int(binary.LittleEndian.Uint32(rawContent[:oplen]))
-	return nil, op, rawContent[4:]
+	headLen := seqlen + oplen
+	seq := int64(binary.LittleEndian.Uint64(rawContent[:seqlen]))
+	op := int(binary.LittleEndian.Uint32(rawContent[seqlen:headLen]))
+	return nil, seq, op, rawContent[headLen:]
 }
 
-func compoundContent(opType int, content []byte) []byte {
-	resultByte := make([]byte, len(content)+oplen)
-	binary.LittleEndian.PutUint32(resultByte, uint32(opType))
+func CompoundContent(seq int64, opType int, content []byte) []byte {
+	resultByte := make([]byte, len(content)+oplen+seqlen)
+	binary.LittleEndian.PutUint64(resultByte, uint64(seq))
+	binary.LittleEndian.PutUint32(resultByte[seqlen:seqlen+oplen], uint32(opType))
 	for i := 0; i < len(content); i++ {
-		resultByte[oplen+i] = content[i]
+		resultByte[oplen+seqlen+i] = content[i]
 	}
 	return resultByte
 }
 
 type OpDealer interface {
-	DealOp(fromUid int, content []byte)
+	DealOp(seq int64, fromUid int, content []byte)
 	GetOperateType() int
 }
 
@@ -48,14 +55,14 @@ func (mainDealer RawMainDeal) AddOpDealer(dealer OpDealer) {
 }
 
 func (mainDealer RawMainDeal) Deal(fromUid int, rawContent []byte) {
-	err, operateType, content := divideTwoPart(rawContent)
+	err, seq, operateType, content := divideThreePart(rawContent)
 	if err != nil {
 		fmt.Println("RawMainDeal deal error:", err)
 		return
 	}
 	realDealer := mainDealer.OpDealMap[operateType]
 	if realDealer != nil {
-		realDealer.DealOp(fromUid, content)
+		realDealer.DealOp(seq, fromUid, content)
 	} else {
 		fmt.Println("no math opType:", operateType)
 	}

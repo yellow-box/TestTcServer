@@ -93,6 +93,8 @@ func (ucManager *UserConnManager) NotifyUser(uid int, content string) {
 func (ucManager *UserConnManager) NotifyUserByte(uid int, content []byte) {
 	defer ucManager.rwLock.RUnlock()
 	ucManager.rwLock.RLock()
-	conn := ucManager.userConnMap[(uid)]
-	conn.WriteData(content)
+	conn, ok := ucManager.userConnMap[(uid)]
+	if ok {
+		conn.WriteData(content)
+	}
 }

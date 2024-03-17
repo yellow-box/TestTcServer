@@ -36,12 +36,14 @@ func acceptConnect(conn net.Conn) {
 	if err != nil {
 		fmt.Println("bindUser error:", err)
 		return
+	} else {
+		fmt.Println("success bind user:", userConn.Uid)
 	}
 	manager.GetManager().StartRead(userConn.Uid)
 }
 
 func Start() {
-	cInfo := ConnectInfo{"10.30.10.114", "12345", "tcp"}
+	cInfo := ConnectInfo{"", "12345", "tcp"}
 	service.ChatService{MainDealer: opType.RawMainDeal{OpDealMap: make(map[int]opType.OpDealer)}}.Init()
 	startListen(cInfo)
 }

@@ -35,6 +35,7 @@ func (manager *ChatRoomManager) InitTestRoom() {
 	testRoomId := 1
 	manager.CreateRoom(testRoomId)
 	testRoom := manager.GetChatRoom(testRoomId)
-	testRoom.addUid(1)
-	testRoom.addUid(2)
+	testRoom.addUid(3)
+	testRoom.addUid(4)
+	testRoom.addUid(5)
 }

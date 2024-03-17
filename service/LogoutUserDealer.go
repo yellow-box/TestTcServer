@@ -9,7 +9,7 @@ import (
 type LogoutUserDealer struct {
 }
 
-func (dealer LogoutUserDealer) DealOp(fromUid int, content []byte) {
+func (dealer LogoutUserDealer) DealOp(seq int64, fromUid int, content []byte) {
 	if fromUid < 0 {
 		fmt.Println("should bind user first uid:", fromUid)
 		return

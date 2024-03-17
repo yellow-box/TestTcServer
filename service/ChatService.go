@@ -17,8 +17,8 @@ func (chatService ChatService) initDealer() {
 	chatService.MainDealer.AddOpDealer(BindUserDealer{})
 	chatService.MainDealer.AddOpDealer(LogoutUserDealer{})
 	chatService.MainDealer.AddOpDealer(SendAllDealer{})
-	chatService.MainDealer.AddOpDealer(SendSingleDealer{})
 	chatService.MainDealer.AddOpDealer(JoinRoomDealer{})
+	chatService.MainDealer.AddOpDealer(HeartBeatDealer{})
 	chatService.MainDealer.AddOpDealer(CreateRoomDealer{})
 	manager.AddRecCallback(chatService)
 }
