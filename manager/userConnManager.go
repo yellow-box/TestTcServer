@@ -3,6 +3,7 @@ package manager
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 var once sync.Once
@@ -15,17 +16,17 @@ type UserConnManager struct {
 }
 
 type OnRecData interface {
-	OnRec(uid int, data []byte)
+	OnRec(userConn *UserConn, data []byte)
 }
 
 func AddRecCallback(onRecData OnRecData) {
 	recCallbackList = append(recCallbackList, onRecData)
 }
 
-func (ucManager *UserConnManager) OnRec(uid int, data []byte) {
-	fmt.Printf("recv data uid:%d,data:%s\n", uid, string(data[:]))
+func (ucManager *UserConnManager) OnRec(uConn *UserConn, data []byte) {
+	fmt.Printf("recv data uid:%d,data:%s\n", uConn.Uid, string(data[:]))
 	for _, recCallback := range recCallbackList {
-		recCallback.OnRec(uid, data)
+		recCallback.OnRec(uConn, data)
 	}
 }
 
@@ -42,6 +43,22 @@ func (ucManager *UserConnManager) AppendUserConn(uConn *UserConn) {
 	ucManager.userConnMap[uConn.Uid] = *uConn
 }
 
+func (ucManager *UserConnManager) DeleteUserConn(uConn *UserConn) {
+	defer ucManager.rwLock.Unlock()
+	ucManager.rwLock.Lock()
+	//等于 -1，说明还没bindUser成功
+	if uConn.Uid != -1 {
+		delete(ucManager.userConnMap, uConn.Uid)
+	} else {
+		for k, userConn := range ucManager.userConnMap {
+			if &userConn == uConn {
+				delete(ucManager.userConnMap, k)
+			}
+		}
+	}
+	ucManager.userConnMap[uConn.Uid] = *uConn
+}
+
 func (ucManager *UserConnManager) StartRead(uid int) {
 	uConn := ucManager.userConnMap[uid]
 	if uConn.Conn == nil {
@@ -51,6 +68,14 @@ func (ucManager *UserConnManager) StartRead(uid int) {
 	err := uConn.readData(&manager)
 	if err != nil {
 		fmt.Printf("read Data error uid=%d,error=%s\n", uid, err)
+		ucManager.RemoveUserConn(uConn)
+	}
+}
+
+func (ucManager *UserConnManager) StartReadConn(uConn UserConn) {
+	err := uConn.readData(&manager)
+	if err != nil {
+		fmt.Printf("read Data error uid=%d,error=%s\n", uConn.Uid, err)
 		ucManager.RemoveUserConn(uConn)
 	}
 }
@@ -96,5 +121,14 @@ func (ucManager *UserConnManager) NotifyUserByte(uid int, content []byte) {
 	conn, ok := ucManager.userConnMap[(uid)]
 	if ok {
 		conn.WriteData(content)
+	}
+}
+
+func (ucManager *UserConnManager) NotifyRecHeartBeat(uid int) {
+	defer ucManager.rwLock.RUnlock()
+	ucManager.rwLock.RLock()
+	conn, ok := ucManager.userConnMap[(uid)]
+	if ok {
+		conn.LastHeartBeatRecTime = time.Now().UnixNano()
 	}
 }

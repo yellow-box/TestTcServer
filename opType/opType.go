@@ -1,6 +1,7 @@
 package opType
 
 import (
+	"awesomeProject/manager"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -20,6 +21,7 @@ const JOIN_ROOM = 7
 
 const SUCCESS = 200
 const FAIL = 500
+const HeartBeatInterval = 1000
 
 func divideThreePart(rawContent []byte) (error, int64, int, []byte) {
 	if len(rawContent) < (oplen + seqlen) {
@@ -46,6 +48,10 @@ type OpDealer interface {
 	GetOperateType() int
 }
 
+type BindUserAction interface {
+	BindUser(conn *manager.UserConn, data []byte)
+}
+
 type RawMainDeal struct {
 	OpDealMap map[int]OpDealer
 }
@@ -54,10 +60,15 @@ func (mainDealer RawMainDeal) AddOpDealer(dealer OpDealer) {
 	mainDealer.OpDealMap[dealer.GetOperateType()] = dealer
 }
 
-func (mainDealer RawMainDeal) Deal(fromUid int, rawContent []byte) {
+func (mainDealer RawMainDeal) Deal(userConn *manager.UserConn, bindUserAction BindUserAction, rawContent []byte) {
+	fromUid := userConn.Uid
 	err, seq, operateType, content := divideThreePart(rawContent)
 	if err != nil {
 		fmt.Println("RawMainDeal deal error:", err)
+		return
+	}
+	if operateType == BIND_USER {
+		bindUserAction.BindUser(userConn, content)
 		return
 	}
 	realDealer := mainDealer.OpDealMap[operateType]

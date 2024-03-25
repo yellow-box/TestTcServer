@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 type User struct {
@@ -15,13 +16,18 @@ type User struct {
 }
 
 type UserConn struct {
-	Uid    int
-	Conn   net.Conn
-	Reader *bufio.Reader
+	Uid                  int
+	Conn                 net.Conn
+	Reader               *bufio.Reader
+	LastHeartBeatRecTime int64
 }
 
 func (userConn *UserConn) WriteString(content string) {
 	userConn.WriteData([]byte(content))
+}
+
+func SetDefaultUserConn(Uid int, Conn net.Conn, Reader *bufio.Reader) UserConn {
+	return UserConn{Uid: Uid, Conn: Conn, Reader: Reader, LastHeartBeatRecTime: time.Now().UnixNano()}
 }
 
 func (userConn *UserConn) WriteData(byteData []byte) {
@@ -34,6 +40,11 @@ func (userConn *UserConn) WriteData(byteData []byte) {
 	var n int
 	var err error
 	binary.LittleEndian.PutUint32(resultSize, uint32(size))
+	//tcpConn := userConn.Conn.(*net.TCPConn)
+	//err = tcpConn.SetNoDelay(true)
+	//if err != nil {
+	//	return
+	//}
 	n, err = userConn.Conn.Write(resultSize)
 	if err != nil {
 		fmt.Println("write size to conn error:", err)
@@ -61,7 +72,7 @@ func (userConn *UserConn) readData(recCallback OnRecData) error {
 		if err != nil {
 			return err
 		} else {
-			recCallback.OnRec(userConn.Uid, dataBytes)
+			recCallback.OnRec(userConn, dataBytes)
 		}
 	}
 }

@@ -1,8 +1,11 @@
 package service
 
 import (
+	"awesomeProject/entity"
 	"awesomeProject/manager"
 	"awesomeProject/opType"
+	"encoding/json"
+	"fmt"
 )
 
 type HeartBeatDealer struct {
@@ -13,5 +16,8 @@ func (dealer HeartBeatDealer) GetOperateType() int {
 }
 
 func (dealer HeartBeatDealer) DealOp(seq int64, fromUid int, content []byte) {
-	manager.GetManager().NotifyUserByte(fromUid, opType.CompoundContent(seq, opType.HEART_BEAT, make([]byte, 0)))
+	rsp, _ := json.Marshal(entity.Rsp{Code: opType.SUCCESS})
+	fmt.Println("receive heat beat from uid:", fromUid)
+	manager.GetManager().NotifyRecHeartBeat(fromUid)
+	manager.GetManager().NotifyUserByte(fromUid, opType.CompoundContent(seq, opType.HEART_BEAT, rsp))
 }
