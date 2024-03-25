@@ -60,7 +60,7 @@ func heatBeatListen(conn *manager.UserConn) {
 				manager.GetManager().DeleteUserConn(conn)
 				break
 			} else {
-				fmt.Println("heartbeat check cur =", cur)
+				//fmt.Println("heartbeat check cur =", cur)
 				conn.LastHeartBeatRecTime = cur
 			}
 		}
