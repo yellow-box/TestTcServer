@@ -6,6 +6,7 @@ type RoomMsg struct {
 	RoomId  int    `json:"room_id"`
 	Content string `json:"content"`
 	FromUid int    `json:"from_uid"`
+	MsgId   string `json:"msg_id"`
 }
 
 type RoomInfo struct {
