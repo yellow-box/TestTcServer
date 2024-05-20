@@ -6,6 +6,7 @@ import (
 	"fmt"
 )
 
+// BinUserData 绑定用户信息
 type BinUserData struct {
 	Uid int `json:"uid"`
 }

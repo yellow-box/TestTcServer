@@ -1,5 +1,6 @@
 package service
 
+// 聊天室的抽象
 type ChatRoom struct {
 	roomId int
 	uidS   []int

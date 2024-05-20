@@ -32,13 +32,15 @@ func startListen(connectInfo ConnectInfo) {
 
 func acceptConnect(conn net.Conn) {
 	defer conn.Close()
+	//才开始建立链接，暂时将该链接的uid 置为-1
 	userConn := manager.SetDefaultUserConn(-1, conn, bufio.NewReader(conn))
 	heatBeatListen(&userConn)
 	manager.GetManager().StartReadConn(userConn)
 }
 
+// 启动定时检测心跳包
 func heatBeatListen(conn *manager.UserConn) {
-	// 定义定时器，每隔1秒执行一次任务
+	// 定义定时器，每隔 n秒执行一次任务
 	ticker := time.NewTicker(opType.HeartBeatInterval * time.Millisecond)
 	fmt.Println("start heatBeatListen")
 	go func(conn *manager.UserConn) {
@@ -69,6 +71,7 @@ func heatBeatListen(conn *manager.UserConn) {
 
 func Start() {
 	cInfo := ConnectInfo{"", "12345", "tcp"}
+	//注册收到客户端消息的处理链
 	service.ChatService{MainDealer: opType.RawMainDeal{OpDealMap: make(map[int]opType.OpDealer)}}.Init()
 	startListen(cInfo)
 }

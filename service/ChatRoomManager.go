@@ -5,6 +5,7 @@ import "sync"
 var once sync.Once
 var chatRoomManager ChatRoomManager
 
+// 聊天室管理的抽象
 type ChatRoomManager struct {
 	chatRoomMap map[int]*ChatRoom
 	rwLock      sync.RWMutex

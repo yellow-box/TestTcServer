@@ -8,6 +8,7 @@ import (
 	"fmt"
 )
 
+// JoinRoomDealer 加入聊天室的处理
 type JoinRoomDealer struct {
 }
 

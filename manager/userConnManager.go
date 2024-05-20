@@ -10,15 +10,18 @@ var once sync.Once
 var manager UserConnManager
 var recCallbackList []OnRecData
 
+// UserConnManager 用户套接字管理
 type UserConnManager struct {
 	userConnMap map[int]UserConn
 	rwLock      sync.RWMutex
 }
 
+// OnRecData 收到用户发送消息后的回调接口
 type OnRecData interface {
 	OnRec(userConn *UserConn, data []byte)
 }
 
+// AddRecCallback 存储收到用户套接字后的 回调
 func AddRecCallback(onRecData OnRecData) {
 	recCallbackList = append(recCallbackList, onRecData)
 }
@@ -37,6 +40,7 @@ func GetManager() *UserConnManager {
 	return &manager
 }
 
+// AppendUserConn 新增一个用户套接字
 func (ucManager *UserConnManager) AppendUserConn(uConn *UserConn) {
 	defer ucManager.rwLock.Unlock()
 	ucManager.rwLock.Lock()
@@ -72,6 +76,7 @@ func (ucManager *UserConnManager) StartRead(uid int) {
 	}
 }
 
+// StartReadConn 读取用户套接字内容
 func (ucManager *UserConnManager) StartReadConn(uConn UserConn) {
 	err := uConn.readData(&manager)
 	if err != nil {
@@ -100,6 +105,7 @@ func (ucManager *UserConnManager) RemoveUserConnByUid(uid int) {
 	}
 }
 
+// NotifyAll 为所有用户发送消息
 func (ucManager *UserConnManager) NotifyAll(content string) {
 	defer ucManager.rwLock.RUnlock()
 	ucManager.rwLock.RLock()
@@ -108,6 +114,7 @@ func (ucManager *UserConnManager) NotifyAll(content string) {
 	}
 }
 
+// NotifyUser 为特定用户发送消息
 func (ucManager *UserConnManager) NotifyUser(uid int, content string) {
 	defer ucManager.rwLock.RUnlock()
 	ucManager.rwLock.RLock()
@@ -115,6 +122,7 @@ func (ucManager *UserConnManager) NotifyUser(uid int, content string) {
 	uConn.WriteString(content)
 }
 
+// NotifyUserByte 为特定用户发送消息
 func (ucManager *UserConnManager) NotifyUserByte(uid int, content []byte) {
 	defer ucManager.rwLock.RUnlock()
 	ucManager.rwLock.RLock()
@@ -124,6 +132,7 @@ func (ucManager *UserConnManager) NotifyUserByte(uid int, content []byte) {
 	}
 }
 
+// NotifyRecHeartBeat 为用户发送心跳包回包
 func (ucManager *UserConnManager) NotifyRecHeartBeat(uid int) {
 	defer ucManager.rwLock.RUnlock()
 	ucManager.rwLock.RLock()

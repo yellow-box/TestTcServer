@@ -8,6 +8,7 @@ import (
 	"fmt"
 )
 
+// 心跳包的处理
 type HeartBeatDealer struct {
 }
 

@@ -15,6 +15,7 @@ type User struct {
 	Name string
 }
 
+// UserConn 用户套接字
 type UserConn struct {
 	Uid                  int
 	Conn                 net.Conn

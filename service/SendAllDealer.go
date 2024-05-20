@@ -8,6 +8,7 @@ import (
 	"fmt"
 )
 
+// SendAllDealer 聊天室内发送消息的处理
 type SendAllDealer struct {
 }
 

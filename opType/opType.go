@@ -11,16 +11,35 @@ const oplen = 4
 const seqlen = 8
 
 // 规定最开始8个字节 表示 seq序号，接着4个字节表示 opType,后续字节表示具体内容
+
+// BIND_USER 给套接字绑定用户
 const BIND_USER = 1
+
+// HEART_BEAT 发送心跳包
 const HEART_BEAT = 2
+
+// SEND_MESSAGE_ALL 发送消息
 const SEND_MESSAGE_ALL = 3
+
+// LOGOUT_UESR 退出登录
 const LOGOUT_UESR = 4
+
+// PUSH_MESSAGE 发送push消息
 const PUSH_MESSAGE = 5
+
+// CREATE_ROOM 创建一个聊天室
 const CREATE_ROOM = 6
+
+// JOIN_ROOM 加入一个聊天室
 const JOIN_ROOM = 7
 
+// SUCCESS 在回包中添加，表示请求成功
 const SUCCESS = 200
+
+// FAIL 在回包中添加，表示请求失败
 const FAIL = 500
+
+// HeartBeatInterval 心跳包检测间隔
 const HeartBeatInterval = 1000
 
 func divideThreePart(rawContent []byte) (error, int64, int, []byte) {

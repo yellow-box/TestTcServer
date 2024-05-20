@@ -3,13 +3,19 @@ package entity
 const System_Uid = 1
 
 type RoomMsg struct {
-	RoomId  int    `json:"room_id"`
+	//房间id
+	RoomId int `json:"room_id"`
+	//消息内容
 	Content string `json:"content"`
-	FromUid int    `json:"from_uid"`
-	MsgId   string `json:"msg_id"`
+	//发送消息的id
+	FromUid int `json:"from_uid"`
+	//消息id
+	MsgId string `json:"msg_id"`
 }
 
 type RoomInfo struct {
-	RoomId int   `json:"room_id"`
-	UidS   []int `json:"uid_s"`
+	//房间id
+	RoomId int `json:"room_id"`
+	//房间内的用户id
+	UidS []int `json:"uid_s"`
 }

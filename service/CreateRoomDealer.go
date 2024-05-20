@@ -8,6 +8,7 @@ import (
 	"fmt"
 )
 
+// CreateRoomDealer 创建聊天室的处理
 type CreateRoomDealer struct {
 }
 

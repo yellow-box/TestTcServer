@@ -6,6 +6,7 @@ import (
 	"fmt"
 )
 
+// 登出的处理
 type LogoutUserDealer struct {
 }
 
